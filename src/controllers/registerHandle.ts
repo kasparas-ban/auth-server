@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 
 type ErrorMsg = { msg: string };
-type JWTToken = {name: string, email: string, password: string};
+type JWTToken = { name: string, email: string, password: string };
 
 //------------ Register Handle ------------//
 const registerHandle = (req: Request, res: Response) => {
@@ -65,7 +65,7 @@ function sendValidationEmail(
   const token = jwt.sign({ name, email, password }, process.env.JWT_KEY, {
     expiresIn: "30m",
   });
-  const CLIENT_URL = "https://" + host;
+  const CLIENT_URL = "http://" + host;
   const confirmUrl = `${CLIENT_URL}/auth/activate/${token}`;
 
   const transporter = nodemailer.createTransport({
@@ -94,14 +94,14 @@ function sendValidationEmail(
       //     'error_msg',
       //     'Something went wrong on our end. Please register again.'
       // );
-      // res.redirect('/auth/login');
+      // res.redirect('http://localhost:3000/register');
     } else {
       console.log("Mail sent : %s", info.response);
       // req.flash(
       //     'success_msg',
       //     'Activation link sent to email ID. Please activate to log in.'
       // );
-      // res.redirect('/auth/login');
+      // res.redirect('http://localhost:3000/login');
     }
   });
 }
@@ -110,6 +110,9 @@ const activateHandle = (req: Request, res: Response) => {
   const token = req.params.token;
 
   console.log('INSIDE ACTIVATE');
+  const timeoutMsg = '?timeout=true';
+  const userExistsMsg = '?exists=true';
+  const activatedMsg = '?activated=true';
 
   if (token) {
     if (!process.env.JWT_KEY) throw Error;
@@ -119,7 +122,7 @@ const activateHandle = (req: Request, res: Response) => {
         //   "error_msg",
         //   "Incorrect or expired link! Please register again."
         // );
-        // res.redirect("/auth/register");
+        res.redirect("http://localhost:3000/register" + timeoutMsg);
         console.error('Error occured: ', err);
       } else {
         if (typeof decodedToken === 'string' || !decodedToken) throw Error;
@@ -131,7 +134,7 @@ const activateHandle = (req: Request, res: Response) => {
             //   "error_msg",
             //   "Email ID already registered! Please log in."
             // );
-            // res.redirect("/auth/login");
+            res.redirect("http://localhost:3000/login" + userExistsMsg);
             console.log('email ID already exists!');
           } else {
             const newUser = new User({
@@ -151,7 +154,7 @@ const activateHandle = (req: Request, res: Response) => {
                     //   "success_msg",
                     //   "Account activated. You can now log in."
                     // );
-                    // res.redirect("/auth/login");
+                    res.redirect("http://localhost:3000/login" + activatedMsg);
                     console.log('Account activated.');
                   })
                   .catch((err) => console.log(err));

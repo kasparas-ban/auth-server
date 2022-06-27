@@ -1,4 +1,5 @@
 import express from 'express';
+import { loginHandle } from '../controllers/loginHandle';
 import { forgotPassword } from '../controllers/passwordHandle';
 import { registerHandle, activateHandle } from '../controllers/registerHandle';
 
@@ -20,7 +21,7 @@ router.post('/forgot', forgotPassword);
 // router.get('/forgot/:token', authController.gotoReset);
 
 //------------ Login POST Handle ------------//
-// router.post('/login', authController.loginHandle);
+router.post('/login', loginHandle);
 
 //------------ Logout GET Handle ------------//
 // router.get('/logout', authController.logoutHandle);

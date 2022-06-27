@@ -1,7 +1,7 @@
 import passportLocal from 'passport-local';
 import brypt from 'bcryptjs';
-import User from '../models/User';
 import { PassportStatic  } from 'passport';
+import User from '../models/User';
 
 const LocalStrategy = passportLocal.Strategy;
 

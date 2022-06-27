@@ -4,9 +4,12 @@ import session from 'express-session';
 import passport from 'passport';
 import passportConfig from './config/passportConfig';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import routes from './routes/index';
+import { ensureAuthenticated } from './config/checkAuth';
 
 const app = express();
+app.use(cors())
 
 //------------ Passport Configuration ------------//
 passportConfig(passport);
@@ -40,8 +43,15 @@ app.use(passport.session());
 //------------ Routes ------------//
 app.use('/auth', routes);
 
+//------------ Dashboard Route ------------//
+app.get(
+  '/main', 
+  ensureAuthenticated,
+  (req, res) => res.send("Congrats! You're in!")
+);
+
 //------------ Global variables ------------//
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => 
   console.log(`Server running on PORT ${PORT}`)
