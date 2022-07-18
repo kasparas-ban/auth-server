@@ -1,4 +1,5 @@
 import express from 'express';
+import errorHandle from '../controllers/errorHandling';
 import { loginHandle } from '../controllers/loginHandle';
 import { forgotPassword } from '../controllers/passwordHandle';
 import { registerHandle, activateHandle } from '../controllers/registerHandle';
@@ -25,5 +26,7 @@ router.post('/login', loginHandle);
 
 //------------ Logout GET Handle ------------//
 // router.get('/logout', authController.logoutHandle);
+
+router.use('/', errorHandle);
 
 export default router;

@@ -1,15 +1,8 @@
-import express from 'express';
 import mongoose from 'mongoose';
-import session from 'express-session';
 import passport from 'passport';
-import passportConfig from './config/passportConfig';
 import dotenv from 'dotenv';
-import cors from 'cors';
-import routes from './routes/index';
-import { ensureAuthenticated } from './config/checkAuth';
-
-const app = express();
-app.use(cors())
+import passportConfig from './config/passportConfig';
+import app from './app';
 
 //------------ Passport Configuration ------------//
 passportConfig(passport);
@@ -22,33 +15,6 @@ const MongoURI = process.env.MONGO_URI;
 mongoose.connect(MongoURI || '')
   .then(() => console.log("Successfully connected to MongoDB"))
   .catch(err => console.log(err));
-
-//------------ Bodyparser Configuration ------------//
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-
-//------------ Express Session Configuration ------------//
-app.use(
-  session({
-      secret: 'secret',
-      resave: true,
-      saveUninitialized: true
-  })
-);
-
-//------------ Passport Middlewares ------------//
-app.use(passport.initialize());
-app.use(passport.session());
-
-//------------ Routes ------------//
-app.use('/auth', routes);
-
-//------------ Dashboard Route ------------//
-app.get(
-  '/main', 
-  ensureAuthenticated,
-  (req, res) => res.send("Congrats! You're in!")
-);
 
 //------------ Global variables ------------//
 const PORT = process.env.PORT || 8000;

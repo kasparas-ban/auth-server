@@ -1,50 +1,63 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import fs from "fs";
 import bcryptjs from "bcryptjs";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 
-type ErrorMsg = { msg: string };
+type ErrorMsg = { formError: string };
 type JWTToken = { name: string, email: string, password: string };
+type FormData = { name: string, email: string, password: string, password2: string };
 
 //------------ Register Handle ------------//
-const registerHandle = (req: Request, res: Response) => {
-  const { name, email, password, password2 } = req.body;
+const registerHandle = (req: Request, res: Response, next: NextFunction) => {
+  const formData: FormData = req.body;
+
+  const errors = validateRegistrationForm(formData);
+  if (errors.length !== 0) {
+    res.status(400);
+    next(errors);
+    return;
+  }
+
+  console.log('ATTEMPTING TO PASS DATA\n \n\n')
+
+  //------------ Validation passed ------------//
+  User.findOne({ email: formData.email }).then((user) => {
+    console.log('USER: ', user, formData.email)
+    if (user) {
+      //------------ User already exists ------------//
+      errors.push({ formError: "Email ID already registered" });
+      res.status(400);
+      next(errors);
+    } else {
+      //sendValidationEmail(name, email, password, req.headers.host ?? "");
+      res.sendStatus(201);
+    }
+  }).catch((err) => {
+    res.status(500);
+    next({ databaseError: err });
+  });
+};
+
+const validateRegistrationForm = (formData: FormData) => {
+  const { name, email, password, password2 } = formData;
   const errors: ErrorMsg[] = [];
 
-  //------------ Checking required fields ------------//
-  if (!name || !email || !password || !password2) {
-    errors.push({ msg: "Please enter all fields" });
-  }
-
-  //------------ Checking password mismatch ------------//
-  if (password != password2) {
-    errors.push({ msg: "Passwords do not match" });
-  }
-
-  //------------ Checking password length ------------//
-  if (password.length < 8) {
-    errors.push({ msg: "Password must be at least 8 characters" });
-  }
-
-  if (errors.length > 0) {
-    res.status(500);
-    res.send(errors);
-  } else {
-    //------------ Validation passed ------------//
-    User.findOne({ email: email }).then((user) => {
-      if (user) {
-        //------------ User already exists ------------//
-        errors.push({ msg: "Email ID already registered" });
-        res.status(500);
-        res.send(errors);
-      } else {
-        sendValidationEmail(name, email, password, req.headers.host ?? "");
-      }
-    });
-  }
-};
+    //------------ Checking required fields ------------//
+    if (!name || !email || !password || !password2)
+      errors.push({ formError: "Not all form fields were filled" });
+  
+    //------------ Checking password mismatch ------------//
+    if (password != password2)
+      errors.push({ formError: "Passwords do not match" });
+  
+    //------------ Checking password length ------------//
+    if (!password || password.length < 8) 
+      errors.push({ formError: "Password must be at least 8 characters" });
+    
+    return errors;
+}
 
 function getEmailHtml(confirmUrl: string) {
   const emailTemplate = fs
