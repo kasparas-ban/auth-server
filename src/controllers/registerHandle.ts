@@ -16,27 +16,24 @@ const registerHandle = (req: Request, res: Response, next: NextFunction) => {
   const errors = validateRegistrationForm(formData);
   if (errors.length !== 0) {
     res.status(400);
-    next(errors);
+    next({ errors });
     return;
   }
 
-  console.log('ATTEMPTING TO PASS DATA\n \n\n')
-
   //------------ Validation passed ------------//
   User.findOne({ email: formData.email }).then((user) => {
-    console.log('USER: ', user, formData.email)
     if (user) {
       //------------ User already exists ------------//
       errors.push({ formError: "Email ID already registered" });
       res.status(400);
-      next(errors);
+      next({ errors });
     } else {
       //sendValidationEmail(name, email, password, req.headers.host ?? "");
       res.sendStatus(201);
     }
   }).catch((err) => {
     res.status(500);
-    next({ databaseError: err });
+    next({ errors: { databaseError: err }});
   });
 };
 
@@ -53,8 +50,24 @@ const validateRegistrationForm = (formData: FormData) => {
       errors.push({ formError: "Passwords do not match" });
   
     //------------ Checking password length ------------//
-    if (!password || password.length < 8) 
-      errors.push({ formError: "Password must be at least 8 characters" });
+    if (!password || password.length < 10) 
+      errors.push({ formError: "Password must be at least 10 characters" });
+
+    //------------ Checking if email format is valid ------------//
+    const isValidEmail = 
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+      .test(email);
+    if (!isValidEmail)
+      errors.push({ formError: "Provided email does not have a valid form" });
+
+    //------------ Checking if data contains invalid characters ------------//
+    const containsValidChars = 
+      /^[a-zA-Z0-9._%=\-!?&*~#$@]*$/.test(name) &&
+      /^[a-zA-Z0-9._%=\-!?&*~#$@]*$/.test(email) &&
+      /^[a-zA-Z0-9._%=\-!?&*~#$@]*$/.test(password) &&
+      /^[a-zA-Z0-9._%=\-!?&*~#$@]*$/.test(password2);
+    if (!containsValidChars)
+      errors.push({ formError: "Provided field contains invalid characters" });
     
     return errors;
 }
