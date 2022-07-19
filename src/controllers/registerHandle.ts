@@ -111,7 +111,7 @@ function sendValidationEmail(
     expiresIn: "30m",
   });
   const CLIENT_URL = "http://" + host;
-  const confirmUrl = `${CLIENT_URL}/auth/activate/${token}`;
+  const confirmUrl = `${CLIENT_URL}/activate/${token}`;
 
   const transporter = nodemailer.createTransport({
     host: process.env.HOST_SERVER,
@@ -134,7 +134,6 @@ function sendValidationEmail(
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) next({ errors: [{ sendMailError: error }] });
-    console.log("Mail sent : %s", info.response);
   });
 }
 
@@ -146,7 +145,9 @@ const activateHandle = (req: Request, res: Response, next: NextFunction) => {
   const userExistsMsg = "?exists=true";
   const activatedMsg = "?activated=true";
 
-  if (token && jwt_key) {
+  console.log(token, jwt_key);
+
+  if (!token || !jwt_key) {
     res.status(500);
     next({
       errors: [{ serverError: "Unable to find the token or the JWT_KEY" }],
@@ -174,26 +175,25 @@ const activateHandle = (req: Request, res: Response, next: NextFunction) => {
           password,
         });
 
-        bcryptjs.genSalt(10, (err, salt) => {
+        bcryptjs.genSalt(10, (genErr, salt) => {
           bcryptjs.hash(newUser.password, salt, (err, hash) => {
-            if (err) {
+            if (genErr || err) {
               res.status(500);
               next({ errors: [{ serverError: 'Failed to save user details' }] });
             }
             newUser.password = hash;
             newUser
               .save()
-              .then((user) => {
-                res.redirect("http://localhost:3000/login" + activatedMsg);
-              })
+              .then(user => res.redirect("http://localhost:3000/login" + activatedMsg))
               .catch(err => {
                 res.status(500);
-                next({ errors: [{ databaseError: err }] })
+                next({ errors: [{ databaseError: err }] });
               });
           });
         });
       }
     }).catch(err => {
+      res.status(500);
       next({ errors: [{ databaseError: err }] })
     });
   })
